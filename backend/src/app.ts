@@ -15,7 +15,7 @@ app.use(express.json());
 
 app.use('/api/auth', authRouter);
 app.use('/api/admin', adminRouter);
-app.use('/api/v1/ai-content', aiContentRouter);
+app.use('/api/ai-content', aiContentRouter);
 
 app.get('/api/health', (_request, response) => {
   response.status(200).json({
