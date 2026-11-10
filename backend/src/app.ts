@@ -4,6 +4,7 @@ import express from 'express';
 
 import { connectToDatabase } from './config/database.js';
 import adminRouter from './modules/admin/routes/admin.routes.js';
+import aiContentRouter from './modules/aiContent/routes/ai-content.routes.js';
 import authRouter from './modules/auth/routes/auth.routes.js';
 import { seedAdmin } from './modules/auth/services/admin-seeder.service.js';
 
@@ -14,6 +15,7 @@ app.use(express.json());
 
 app.use('/api/auth', authRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/v1/ai-content', aiContentRouter);
 
 app.get('/api/health', (_request, response) => {
   response.status(200).json({

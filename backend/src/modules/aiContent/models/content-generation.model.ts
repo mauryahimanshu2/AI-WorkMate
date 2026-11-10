@@ -4,15 +4,24 @@ export interface IContentGeneration {
   userId: Types.ObjectId;
   title: string;
   contentType: string;
+  requestKey?: string;
   input: {
-    topic?: string;
+    topic: string;
     description: string;
     targetAudience?: string;
     tone: string;
     language: string;
+    customLanguage?: string;
     wordCount?: number;
     keywords: string[];
     additionalInstructions?: string;
+    recipient?: string;
+    platform?: string;
+    callToAction?: string;
+    productName?: string;
+    features: string[];
+    benefits: string[];
+    outlinePreference?: boolean;
   };
   generatedContent: string;
   status: 'pending' | 'completed' | 'failed';
@@ -44,15 +53,27 @@ const contentGenerationSchema = new mongoose.Schema<IContentGeneration>(
       required: true,
       trim: true,
     },
+    requestKey: {
+      type: String,
+      trim: true,
+    },
     input: {
-      topic: String,
+      topic: { type: String, required: true },
       description: { type: String, required: true },
       targetAudience: String,
       tone: { type: String, required: true },
       language: { type: String, required: true },
+      customLanguage: String,
       wordCount: Number,
       keywords: { type: [String], default: [] },
       additionalInstructions: String,
+      recipient: String,
+      platform: String,
+      callToAction: String,
+      productName: String,
+      features: { type: [String], default: [] },
+      benefits: { type: [String], default: [] },
+      outlinePreference: Boolean,
     },
     generatedContent: {
       type: String,
@@ -79,6 +100,13 @@ const contentGenerationSchema = new mongoose.Schema<IContentGeneration>(
 
 contentGenerationSchema.index({ userId: 1, createdAt: -1 });
 contentGenerationSchema.index({ userId: 1, contentType: 1 });
+contentGenerationSchema.index(
+  { userId: 1, requestKey: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { requestKey: { $type: 'string' } },
+  },
+);
 
 export const ContentGeneration =
   (mongoose.models.ContentGeneration as
