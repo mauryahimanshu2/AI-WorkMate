@@ -48,3 +48,20 @@ export const authenticate = async (
   }
 };
 
+export const requireAdmin = (
+  request: Request,
+  response: Response,
+  next: NextFunction,
+): void => {
+  if (request.auth?.role !== 'admin') {
+    response.status(403).json({
+      success: false,
+      message: 'Admin access required',
+    });
+    return;
+  }
+
+  next();
+};
+
+
