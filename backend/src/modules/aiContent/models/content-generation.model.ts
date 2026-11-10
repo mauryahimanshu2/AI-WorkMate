@@ -1,5 +1,11 @@
 import mongoose, { type Model, type Types } from 'mongoose';
 
+export interface IContentRevision {
+  version: number;
+  content: string;
+  createdAt: Date;
+}
+
 export interface IContentGeneration {
   userId: Types.ObjectId;
   title: string;
@@ -24,6 +30,7 @@ export interface IContentGeneration {
     outlinePreference?: boolean;
   };
   generatedContent: string;
+  revisions: IContentRevision[];
   status: 'pending' | 'completed' | 'failed';
   provider?: string;
   model?: string;
@@ -35,6 +42,18 @@ export interface IContentGeneration {
   createdAt: Date;
   updatedAt: Date;
 }
+
+const contentRevisionSchema = new mongoose.Schema<IContentRevision>(
+  {
+    version: { type: Number, required: true, min: 1 },
+    content: { type: String, required: true },
+    createdAt: { type: Date, required: true },
+  },
+  {
+    _id: false,
+    versionKey: false,
+  },
+);
 
 const contentGenerationSchema = new mongoose.Schema<IContentGeneration>(
   {
@@ -79,6 +98,10 @@ const contentGenerationSchema = new mongoose.Schema<IContentGeneration>(
       type: String,
       default: '',
     },
+    revisions: {
+      type: [contentRevisionSchema],
+      default: [],
+    },
     status: {
       type: String,
       enum: ['pending', 'completed', 'failed'],
@@ -100,6 +123,7 @@ const contentGenerationSchema = new mongoose.Schema<IContentGeneration>(
 
 contentGenerationSchema.index({ userId: 1, createdAt: -1 });
 contentGenerationSchema.index({ userId: 1, contentType: 1 });
+contentGenerationSchema.index({ userId: 1, status: 1, createdAt: -1 });
 contentGenerationSchema.index(
   { userId: 1, requestKey: 1 },
   {
