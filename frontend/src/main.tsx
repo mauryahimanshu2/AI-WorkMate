@@ -6,6 +6,9 @@ import App from './App';
 import { store } from './store';
 import './styles.css';
 import './auth/auth.css';
+import './dashboard/dashboard.css';
+import './content/content.css';
+import './admin/admin.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

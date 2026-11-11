@@ -56,7 +56,8 @@ export function SignInPage() {
       const session = await signIn({ email: email.trim(), password });
       saveSession(session, rememberMe);
       setSuccessMessage(`Welcome back, ${session.user.name}. Redirecting…`);
-      window.setTimeout(() => window.location.assign('/'), 700);
+      const destination = session.user.role === 'admin' ? '/admin' : '/dashboard';
+      window.setTimeout(() => window.location.assign(destination), 700);
     } catch (error) {
       setServerError(error instanceof Error ? error.message : 'Unable to sign in.');
       setIsSubmitting(false);

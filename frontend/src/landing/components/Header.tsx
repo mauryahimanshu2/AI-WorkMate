@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { getStoredUser, hasStoredSession } from '../../auth/services/authApi';
 import { Brand } from './Brand';
 
 const navigation = [
@@ -10,6 +11,9 @@ const navigation = [
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const isSignedIn = hasStoredSession();
+  const user = getStoredUser();
+  const dashboardHref = user?.role === 'admin' ? '/admin' : '/dashboard';
   const closeMenu = () => setIsMenuOpen(false);
 
   return (
@@ -43,8 +47,14 @@ export function Header() {
             ))}
           </div>
           <div className="navigation__auth">
-            <a className="navigation__signin" href="/signin" onClick={closeMenu}>Sign in</a>
-            <a className="button button--small" href="/signup" onClick={closeMenu}>Get started</a>
+            {isSignedIn ? (
+              <a className="button button--small" href={dashboardHref} onClick={closeMenu}>{user?.role === 'admin' ? 'Admin dashboard' : 'Dashboard'}</a>
+            ) : (
+              <>
+                <a className="navigation__signin" href="/signin" onClick={closeMenu}>Sign in</a>
+                <a className="button button--small" href="/signup" onClick={closeMenu}>Get started</a>
+              </>
+            )}
           </div>
         </nav>
       </div>
