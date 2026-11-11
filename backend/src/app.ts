@@ -1,7 +1,9 @@
 import 'dotenv/config';
 
+import cors from 'cors';
 import express from 'express';
 
+import { createCorsOptions } from './config/cors.js';
 import { connectToDatabase } from './config/database.js';
 import adminRouter from './modules/admin/routes/admin.routes.js';
 import aiContentRouter from './modules/aiContent/routes/ai-content.routes.js';
@@ -11,6 +13,7 @@ import { seedAdmin } from './modules/auth/services/admin-seeder.service.js';
 const app = express();
 const port = Number(process.env.PORT) || 5000;
 
+app.use(cors(createCorsOptions()));
 app.use(express.json());
 
 app.use('/api/auth', authRouter);
