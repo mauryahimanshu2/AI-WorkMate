@@ -92,39 +92,11 @@ a:focus-visible {
 }
 
 .brand__mark {
-  position: relative;
-  display: grid;
   width: 34px;
   height: 34px;
-  place-items: center;
-  overflow: hidden;
   border-radius: 10px;
-  background: var(--ink);
-  transform: rotate(-3deg);
-}
-
-.brand__mark span {
-  position: absolute;
-  border-radius: 999px;
-  background: var(--lime);
-}
-
-.brand__mark span:nth-child(1) {
-  width: 5px;
-  height: 22px;
-  transform: rotate(35deg);
-}
-
-.brand__mark span:nth-child(2) {
-  width: 5px;
-  height: 15px;
-  transform: translate(-7px, 3px) rotate(35deg);
-}
-
-.brand__mark span:nth-child(3) {
-  width: 5px;
-  height: 15px;
-  transform: translate(7px, -3px) rotate(35deg);
+  object-fit: contain;
+  flex: 0 0 34px;
 }
 
 .navigation,

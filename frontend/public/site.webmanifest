@@ -1,0 +1,17 @@
+{
+  "name": "AI WorkMate",
+  "short_name": "WorkMate",
+  "description": "Draft, refine, and organize professional content with AI WorkMate.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fbfaf5",
+  "theme_color": "#063c3d",
+  "icons": [
+    {
+      "src": "/ai-workmate-logo.png",
+      "sizes": "1254x1254",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

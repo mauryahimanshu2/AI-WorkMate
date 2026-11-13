@@ -5,11 +5,7 @@ interface BrandProps {
 export function Brand({ href = '/' }: BrandProps) {
   return (
     <a className="brand" href={href} aria-label="AI WorkMate home">
-      <span className="brand__mark" aria-hidden="true">
-        <span />
-        <span />
-        <span />
-      </span>
+      <img className="brand__mark" src="/ai-workmate-logo.png" alt="" aria-hidden="true" />
       <span>AI WorkMate</span>
     </a>
   );

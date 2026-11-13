@@ -192,7 +192,7 @@ export function AdminDashboardPage() {
         <main className="admin-content">
           <section className="admin-hero" id="overview">
             <div><span>ADMIN OVERVIEW</span><h1>Good to see you, {currentUser.name.split(' ')[0]}.</h1><p>Monitor accounts, review user activity, and control access from one secure workspace.</p></div>
-            <div className="admin-hero__mark" aria-hidden="true">AW</div>
+            <img className="admin-hero__mark" src="/ai-workmate-logo.png" alt="" aria-hidden="true" />
           </section>
 
           <AdminStats summary={summary} isLoading={summaryLoading} />
