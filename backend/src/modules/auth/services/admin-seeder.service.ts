@@ -14,7 +14,7 @@ const getRequiredEnv = (name: string): string => {
   return value;
 };
 
-export const seedAdmin = async (): Promise<void> => {
+  export const seedAdmin = async (): Promise<void> => {
   const name = getRequiredEnv('ADMIN_NAME');
   const email = getRequiredEnv('ADMIN_EMAIL').toLowerCase();
   const password = getRequiredEnv('ADMIN_PASSWORD');

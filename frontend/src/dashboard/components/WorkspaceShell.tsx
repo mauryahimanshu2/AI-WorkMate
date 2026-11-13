@@ -4,6 +4,7 @@ import { getStoredUser, hasStoredSession, signOut } from '../../auth/services/au
 import type { User } from '../../auth/types/auth.types';
 import { DashboardHeader } from './DashboardHeader';
 import { DashboardSidebar } from './DashboardSidebar';
+import { navigate } from '../../routing/router';
 
 interface WorkspaceShellProps {
   activePage: 'dashboard' | 'studio' | 'content';
@@ -23,13 +24,13 @@ export function WorkspaceShell(props: WorkspaceShellProps) {
   const [isSigningOut, setIsSigningOut] = useState(false);
 
   useEffect(() => {
-    if (!user || !hasStoredSession()) window.location.replace('/signin');
+    if (!user || !hasStoredSession()) navigate('/signin', { replace: true });
   }, [user]);
 
   const handleSignOut = async () => {
     setIsSigningOut(true);
     await signOut();
-    window.location.assign('/signin');
+    navigate('/signin', { replace: true });
   };
 
   if (!user || !hasStoredSession()) return <main className="dashboard-guard">Opening sign in…</main>;

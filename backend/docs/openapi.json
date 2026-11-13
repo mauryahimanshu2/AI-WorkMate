@@ -1,0 +1,1830 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "AI WorkMate API",
+    "version": "1.0.0",
+    "summary": "Authentication, AI content generation, content history, and administration API.",
+    "description": "The AI WorkMate REST API powers the user workspace and administrator dashboard. Protected operations use a JWT access token in the Authorization header. Successful responses contain success, message, and usually data. Error responses contain success=false and a human-readable message; validation errors also include field-level errors.",
+    "contact": {
+      "name": "AI WorkMate"
+    }
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Current backend host"
+    },
+    {
+      "url": "http://localhost:5000",
+      "description": "Local development"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Health",
+      "description": "Service availability"
+    },
+    {
+      "name": "Authentication",
+      "description": "Account registration, login, token rotation, and logout"
+    },
+    {
+      "name": "Content configuration",
+      "description": "Public content types and form options"
+    },
+    {
+      "name": "AI content",
+      "description": "Authenticated content generation and content ownership operations"
+    },
+    {
+      "name": "Administration",
+      "description": "Administrator-only user management and activity inspection"
+    }
+  ],
+  "paths": {
+    "/api/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Check API health",
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "description": "The backend is available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                },
+                "example": {
+                  "success": true,
+                  "message": "AI WorkMate backend is running"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/signup": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Create a user account",
+        "description": "Registers an active user with the user role. Email addresses are normalized to lowercase.",
+        "operationId": "signup",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignupRequest"
+              },
+              "example": {
+                "name": "Asha Sharma",
+                "email": "asha@example.com",
+                "password": "strong-password"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Account created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "409": {
+            "description": "An account with the email already exists.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Sign in",
+        "description": "Authenticates an active account and returns an access token, a refresh token, and the safe user profile.",
+        "operationId": "login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              },
+              "example": {
+                "email": "asha@example.com",
+                "password": "strong-password"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authentication succeeded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "description": "Email or password is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account is disabled.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/auth/refresh-token": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Rotate a refresh token",
+        "description": "Consumes a valid, current refresh token and returns a new access/refresh token pair. A rotated refresh token cannot be reused.",
+        "operationId": "refreshToken",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["refreshToken"],
+                "properties": {
+                  "refreshToken": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A new token pair was issued.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Log out",
+        "description": "Invalidates the stored refresh token and increments the user's token version, invalidating the current token set.",
+        "operationId": "logout",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session invalidated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/ai-content/content-types": {
+      "get": {
+        "tags": ["Content configuration"],
+        "summary": "List supported content types",
+        "operationId": "getContentTypes",
+        "responses": {
+          "200": {
+            "description": "Content types and their dynamic form fields.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentTypesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai-content/options": {
+      "get": {
+        "tags": ["Content configuration"],
+        "summary": "Get content form options",
+        "operationId": "getContentOptions",
+        "responses": {
+          "200": {
+            "description": "Supported tones, languages, social platforms, and form limits.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentOptionsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai-content/generate": {
+      "post": {
+        "tags": ["AI content"],
+        "summary": "Generate AI content",
+        "description": "Generates content for the authenticated user and stores it in history. An optional Idempotency-Key makes safe retries possible. Reusing the same valid key returns the existing generation with status 200.",
+        "operationId": "generateContent",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "A caller-generated retry key containing 8-128 letters, numbers, underscores, or hyphens.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{8,128}$",
+              "minLength": 8,
+              "maxLength": 128
+            },
+            "example": "email_2026_11_13_001"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateContentRequest"
+              },
+              "example": {
+                "contentType": "professional_email",
+                "topic": "Weekly project update",
+                "description": "Summarize completed work, current risks, and the plan for next week.",
+                "targetAudience": "Project stakeholders",
+                "tone": "professional",
+                "language": "English",
+                "wordCount": 300,
+                "keywords": ["progress", "risks", "next steps"],
+                "recipient": "Stakeholder team",
+                "callToAction": "Reply with questions before Friday",
+                "features": [],
+                "benefits": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "An existing generation was returned for the idempotency key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerateContentResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "New content was generated and saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerateContentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "409": {
+            "description": "A conflicting generation request is already using the idempotency key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "429": {
+            "description": "The authenticated user reached the daily generation limit.",
+            "headers": {
+              "RateLimit": {
+                "description": "Standard rate-limit information.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "502": {
+            "description": "The AI provider failed to generate content.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "AI generation is not configured.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "The AI provider timed out.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai-content/history": {
+      "get": {
+        "tags": ["AI content"],
+        "summary": "List the current user's content history",
+        "operationId": "getContentHistory",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "name": "contentType",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/ContentTypeId"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/GenerationStatus"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Case-insensitive title or topic search.",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated content owned by the authenticated user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentHistoryResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/ai-content/{generationId}/revisions": {
+      "get": {
+        "tags": ["AI content"],
+        "summary": "Get content revision history",
+        "operationId": "getContentRevisions",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/GenerationId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Saved revisions plus the current version.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevisionsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/ai-content/{generationId}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/GenerationId"
+        }
+      ],
+      "get": {
+        "tags": ["AI content"],
+        "summary": "Get one content generation",
+        "operationId": "getContentById",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Content owned by the authenticated user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentGenerationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "patch": {
+        "tags": ["AI content"],
+        "summary": "Update completed content",
+        "description": "Updates the title, generated content, or both. Changing generated content stores the previous value as a revision. Only completed content can be edited.",
+        "operationId": "updateContent",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateContentRequest"
+              },
+              "example": {
+                "title": "Updated weekly project report",
+                "generatedContent": "Updated content goes here."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Content updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentGenerationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "The content is not in completed state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["AI content"],
+        "summary": "Delete content",
+        "operationId": "deleteContent",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Content deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/admin/users": {
+      "get": {
+        "tags": ["Administration"],
+        "summary": "List users",
+        "description": "Returns users in newest-first order. Invalid page values fall back to 1 and limits above 100 are capped at 100.",
+        "operationId": "getUsers",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Case-insensitive name or email search.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["active", "inactive"]
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/UserRole"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated users.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/admin/users/{userId}": {
+      "get": {
+        "tags": ["Administration"],
+        "summary": "Get user details",
+        "operationId": "getUserById",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/UserId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User profile and total generation count.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDetailsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/admin/users/{userId}/status": {
+      "patch": {
+        "tags": ["Administration"],
+        "summary": "Activate or deactivate a user",
+        "description": "Deactivating an account invalidates its sessions. An administrator cannot deactivate their own account.",
+        "operationId": "updateUserStatus",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/UserId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["isActive"],
+                "properties": {
+                  "isActive": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              "example": {
+                "isActive": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User status updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/admin/users/{userId}/history": {
+      "get": {
+        "tags": ["Administration"],
+        "summary": "Get a user's content history",
+        "operationId": "getUserHistory",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/UserId"
+          },
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated generation history for the selected user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentHistoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Access token returned by POST /api/auth/login or POST /api/auth/refresh-token."
+      }
+    },
+    "parameters": {
+      "Page": {
+        "name": "page",
+        "in": "query",
+        "description": "One-based page number.",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1
+        }
+      },
+      "Limit": {
+        "name": "limit",
+        "in": "query",
+        "description": "Records per page.",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 10
+        }
+      },
+      "GenerationId": {
+        "name": "generationId",
+        "in": "path",
+        "required": true,
+        "description": "MongoDB ObjectId of a content generation.",
+        "schema": {
+          "$ref": "#/components/schemas/ObjectId"
+        }
+      },
+      "UserId": {
+        "name": "userId",
+        "in": "path",
+        "required": true,
+        "description": "MongoDB ObjectId of a user.",
+        "schema": {
+          "$ref": "#/components/schemas/ObjectId"
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "The request is malformed or contains an invalid identifier.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "A valid access token is required.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "success": false,
+              "message": "Authentication required"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "The authenticated user does not have administrator access.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "success": false,
+              "message": "Admin access required"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "The requested resource was not found or is not owned by the current user.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "ValidationError": {
+        "description": "One or more validated fields are invalid.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ValidationErrorResponse"
+            }
+          }
+        }
+      },
+      "InternalError": {
+        "description": "The server could not complete the request.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "ObjectId": {
+        "type": "string",
+        "pattern": "^[a-fA-F0-9]{24}$",
+        "example": "6735d1cf4a4fc2db8c4c11a2"
+      },
+      "MessageResponse": {
+        "type": "object",
+        "required": ["success", "message"],
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["success", "message"],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ValidationErrorResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ErrorResponse"
+          },
+          {
+            "type": "object",
+            "required": ["errors"],
+            "properties": {
+              "errors": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["field", "message"],
+                  "properties": {
+                    "field": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "UserRole": {
+        "type": "string",
+        "enum": ["user", "admin"]
+      },
+      "User": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["_id", "name", "email", "role", "isActive", "createdAt", "updatedAt"],
+        "properties": {
+          "_id": {
+            "$ref": "#/components/schemas/ObjectId"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254
+          },
+          "role": {
+            "$ref": "#/components/schemas/UserRole"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "lastLoginAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SignupRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "email", "password"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "minLength": 8,
+            "writeOnly": true
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["email", "password"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "minLength": 1,
+            "writeOnly": true
+          }
+        }
+      },
+      "TokenPair": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["accessToken", "refreshToken"],
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "description": "Short-lived JWT access token."
+          },
+          "refreshToken": {
+            "type": "string",
+            "description": "Single-use rotating JWT refresh token."
+          }
+        }
+      },
+      "UserResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/MessageResponse"
+          },
+          {
+            "type": "object",
+            "required": ["data"],
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": ["user"],
+                "properties": {
+                  "user": {
+                    "$ref": "#/components/schemas/User"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "LoginResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/MessageResponse"
+          },
+          {
+            "type": "object",
+            "required": ["data"],
+            "properties": {
+              "data": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/TokenPair"
+                  },
+                  {
+                    "type": "object",
+                    "required": ["user"],
+                    "properties": {
+                      "user": {
+                        "$ref": "#/components/schemas/User"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "TokenResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/MessageResponse"
+          },
+          {
+            "type": "object",
+            "required": ["data"],
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/TokenPair"
+              }
+            }
+          }
+        ]
+      },
+      "ContentTypeId": {
+        "type": "string",
+        "enum": [
+          "professional_email",
+          "social_media_post",
+          "blog_article",
+          "blog_outline",
+          "product_description",
+          "marketing_copy",
+          "business_proposal",
+          "job_description",
+          "meeting_summary",
+          "custom_content"
+        ]
+      },
+      "Tone": {
+        "type": "string",
+        "enum": ["professional", "formal", "friendly", "conversational", "persuasive", "creative", "technical", "informative", "humorous"]
+      },
+      "Language": {
+        "type": "string",
+        "enum": ["English", "Hindi", "French", "Spanish", "German", "Arabic", "Custom"]
+      },
+      "GenerationStatus": {
+        "type": "string",
+        "enum": ["pending", "completed", "failed"]
+      },
+      "ContentType": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name", "description", "dynamicFields"],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ContentTypeId"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "dynamicFields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ContentTypesResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/MessageResponse"
+          },
+          {
+            "type": "object",
+            "required": ["data"],
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": ["contentTypes"],
+                "properties": {
+                  "contentTypes": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/ContentType"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "ContentOptionsResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/MessageResponse"
+          },
+          {
+            "type": "object",
+            "required": ["data"],
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": ["tones", "languages", "socialPlatforms", "wordCount", "maximumKeywords"],
+                "properties": {
+                  "tones": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Tone"
+                    }
+                  },
+                  "languages": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Language"
+                    }
+                  },
+                  "socialPlatforms": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": ["LinkedIn", "X", "Facebook", "Instagram", "General"]
+                    }
+                  },
+                  "wordCount": {
+                    "type": "object",
+                    "required": ["minimum", "maximum"],
+                    "properties": {
+                      "minimum": {
+                        "type": "integer",
+                        "const": 50
+                      },
+                      "maximum": {
+                        "type": "integer",
+                        "const": 5000
+                      }
+                    }
+                  },
+                  "maximumKeywords": {
+                    "type": "integer",
+                    "const": 15
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "GenerateContentRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["contentType", "topic", "description", "tone", "language"],
+        "properties": {
+          "contentType": {
+            "$ref": "#/components/schemas/ContentTypeId"
+          },
+          "topic": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 150
+          },
+          "description": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 5000
+          },
+          "targetAudience": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "tone": {
+            "$ref": "#/components/schemas/Tone"
+          },
+          "language": {
+            "$ref": "#/components/schemas/Language"
+          },
+          "customLanguage": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Required when language is Custom."
+          },
+          "wordCount": {
+            "type": "integer",
+            "minimum": 50,
+            "maximum": 5000
+          },
+          "keywords": {
+            "type": "array",
+            "maxItems": 15,
+            "default": [],
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 50
+            }
+          },
+          "additionalInstructions": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "recipient": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "platform": {
+            "type": "string",
+            "enum": ["LinkedIn", "X", "Facebook", "Instagram", "General"]
+          },
+          "callToAction": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "productName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "features": {
+            "type": "array",
+            "maxItems": 15,
+            "default": [],
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            }
+          },
+          "benefits": {
+            "type": "array",
+            "maxItems": 15,
+            "default": [],
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            }
+          },
+          "outlinePreference": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ContentInput": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/GenerateContentRequest"
+          }
+        ]
+      },
+      "Usage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["inputTokens", "outputTokens", "estimatedCost"],
+        "properties": {
+          "inputTokens": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "outputTokens": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalTokens": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "estimatedCost": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      },
+      "Revision": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["version", "content", "createdAt"],
+        "properties": {
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "content": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ContentGeneration": {
+        "type": "object",
+        "required": ["_id", "userId", "title", "contentType", "input", "generatedContent", "revisions", "status", "usage", "createdAt", "updatedAt"],
+        "properties": {
+          "_id": {
+            "$ref": "#/components/schemas/ObjectId"
+          },
+          "userId": {
+            "$ref": "#/components/schemas/ObjectId"
+          },
+          "title": {
+            "type": "string"
+          },
+          "contentType": {
+            "$ref": "#/components/schemas/ContentTypeId"
+          },
+          "requestKey": {
+            "type": "string"
+          },
+          "input": {
+            "$ref": "#/components/schemas/ContentInput"
+          },
+          "generatedContent": {
+            "type": "string"
+          },
+          "revisions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Revision"
+            }
+          },
+          "status": {
+            "$ref": "#/components/schemas/GenerationStatus"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/Usage"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "GenerateContentResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/MessageResponse"
+          },
+          {
+            "type": "object",
+            "required": ["data"],
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": ["id", "title", "contentType", "generatedContent", "status", "usage", "createdAt"],
+                "properties": {
+                  "id": {
+                    "$ref": "#/components/schemas/ObjectId"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "contentType": {
+                    "$ref": "#/components/schemas/ContentTypeId"
+                  },
+                  "generatedContent": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "$ref": "#/components/schemas/GenerationStatus"
+                  },
+                  "provider": {
+                    "type": "string"
+                  },
+                  "model": {
+                    "type": "string"
+                  },
+                  "usage": {
+                    "$ref": "#/components/schemas/Usage"
+                  },
+                  "createdAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "Pagination": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["page", "limit", "totalRecords", "totalPages"],
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "totalRecords": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "ContentHistoryResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/MessageResponse"
+          },
+          {
+            "type": "object",
+            "required": ["data"],
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": ["history", "pagination"],
+                "properties": {
+                  "history": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/ContentGeneration"
+                    }
+                  },
+                  "pagination": {
+                    "$ref": "#/components/schemas/Pagination"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "ContentGenerationResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/MessageResponse"
+          },
+          {
+            "type": "object",
+            "required": ["data"],
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": ["generation"],
+                "properties": {
+                  "generation": {
+                    "$ref": "#/components/schemas/ContentGeneration"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "UpdateContentRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "minProperties": 1,
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 150
+          },
+          "generatedContent": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50000
+          }
+        }
+      },
+      "RevisionsResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/MessageResponse"
+          },
+          {
+            "type": "object",
+            "required": ["data"],
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": ["revisions", "current", "totalVersions"],
+                "properties": {
+                  "revisions": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Revision"
+                    }
+                  },
+                  "current": {
+                    "$ref": "#/components/schemas/Revision"
+                  },
+                  "totalVersions": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "UserListPagination": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["page", "limit", "totalUsers", "totalPages"],
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "totalUsers": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "UserListResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/MessageResponse"
+          },
+          {
+            "type": "object",
+            "required": ["data"],
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": ["users", "pagination"],
+                "properties": {
+                  "users": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/User"
+                    }
+                  },
+                  "pagination": {
+                    "$ref": "#/components/schemas/UserListPagination"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "UserDetailsResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/MessageResponse"
+          },
+          {
+            "type": "object",
+            "required": ["data"],
+            "properties": {
+              "data": {
+                "type": "object",
+                "required": ["user", "generationCount"],
+                "properties": {
+                  "user": {
+                    "$ref": "#/components/schemas/User"
+                  },
+                  "generationCount": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

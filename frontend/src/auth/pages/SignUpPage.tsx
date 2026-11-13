@@ -5,6 +5,7 @@ import { FormAlert } from '../components/FormAlert';
 import { FormField } from '../components/FormField';
 import { PasswordField } from '../components/PasswordField';
 import { signUp } from '../services/authApi';
+import { navigate } from '../../routing/router';
 
 interface SignUpErrors {
   name?: string;
@@ -62,7 +63,7 @@ export function SignUpPage() {
       await signUp({ name: name.trim(), email: email.trim(), password });
       sessionStorage.setItem('signupEmail', email.trim());
       sessionStorage.setItem('authNotice', 'Account created successfully. You can sign in now.');
-      window.location.assign('/signin');
+      navigate('/signin', { replace: true });
     } catch (error) {
       setServerError(error instanceof Error ? error.message : 'Unable to create your account.');
       setIsSubmitting(false);

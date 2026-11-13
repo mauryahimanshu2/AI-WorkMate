@@ -36,17 +36,14 @@ export async function signIn(input: SignInInput): Promise<SignInResult> {
   return post<SignInResult>('/auth/login', input);
 }
 
-export function saveSession(session: SignInResult, rememberMe: boolean): void {
-  const selectedStorage = rememberMe ? localStorage : sessionStorage;
-  const otherStorage = rememberMe ? sessionStorage : localStorage;
+export function saveSession(session: SignInResult): void {
+  sessionStorage.removeItem('accessToken');
+  sessionStorage.removeItem('refreshToken');
+  sessionStorage.removeItem('authUser');
 
-  otherStorage.removeItem('accessToken');
-  otherStorage.removeItem('refreshToken');
-  otherStorage.removeItem('authUser');
-
-  selectedStorage.setItem('accessToken', session.accessToken);
-  selectedStorage.setItem('refreshToken', session.refreshToken);
-  selectedStorage.setItem('authUser', JSON.stringify(session.user));
+  localStorage.setItem('accessToken', session.accessToken);
+  localStorage.setItem('refreshToken', session.refreshToken);
+  localStorage.setItem('authUser', JSON.stringify(session.user));
 }
 
 export function getStoredUser(): User | null {

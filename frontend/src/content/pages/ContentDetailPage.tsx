@@ -4,6 +4,7 @@ import { WorkspaceShell } from '../../dashboard/components/WorkspaceShell';
 import { DeleteDialog } from '../components/DeleteDialog';
 import { deleteContent, getContentById, getContentRevisions, updateContent } from '../services/contentApi';
 import type { ContentGeneration, RevisionHistory } from '../types/content.types';
+import { navigate } from '../../routing/router';
 
 interface ContentDetailPageProps { contentId: string; }
 
@@ -48,7 +49,7 @@ export function ContentDetailPage({ contentId }: ContentDetailPageProps) {
 
   const remove = async () => {
     setIsDeleting(true);
-    try { await deleteContent(contentId); window.location.assign('/content'); }
+    try { await deleteContent(contentId); navigate('/content', { replace: true }); }
     catch (deleteError) { setError(deleteError instanceof Error ? deleteError.message : 'Unable to delete content.'); setShowDelete(false); setIsDeleting(false); }
   };
 

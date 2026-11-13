@@ -22,6 +22,7 @@ import type {
   UserListFilters,
   UserListResponse,
 } from '../types/admin.types';
+import { navigate } from '../../routing/router';
 
 const emptySummary: AdminSummary = {
   totalUsers: 0,
@@ -58,9 +59,9 @@ export function AdminDashboardPage() {
 
   useEffect(() => {
     if (!hasStoredSession() || !currentUser) {
-      window.location.replace('/signin');
+      navigate('/signin', { replace: true });
     } else if (currentUser.role !== 'admin') {
-      window.location.replace('/dashboard');
+      navigate('/dashboard', { replace: true });
     }
   }, [currentUser]);
 
@@ -164,7 +165,7 @@ export function AdminDashboardPage() {
   const handleSignOut = async () => {
     setIsSigningOut(true);
     await signOut();
-    window.location.replace('/signin');
+    navigate('/signin', { replace: true });
   };
 
   if (!currentUser || currentUser.role !== 'admin') return null;

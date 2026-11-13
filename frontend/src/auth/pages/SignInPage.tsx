@@ -5,6 +5,7 @@ import { FormAlert } from '../components/FormAlert';
 import { FormField } from '../components/FormField';
 import { PasswordField } from '../components/PasswordField';
 import { saveSession, signIn } from '../services/authApi';
+import { navigate } from '../../routing/router';
 
 interface SignInErrors {
   email?: string;
@@ -16,7 +17,6 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export function SignInPage() {
   const [email, setEmail] = useState(() => sessionStorage.getItem('signupEmail') || '');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(true);
   const [errors, setErrors] = useState<SignInErrors>({});
   const [serverError, setServerError] = useState('');
   const [successMessage, setSuccessMessage] = useState(
@@ -54,10 +54,10 @@ export function SignInPage() {
 
     try {
       const session = await signIn({ email: email.trim(), password });
-      saveSession(session, rememberMe);
+      saveSession(session);
       setSuccessMessage(`Welcome back, ${session.user.name}. Redirecting…`);
       const destination = session.user.role === 'admin' ? '/admin' : '/dashboard';
-      window.setTimeout(() => window.location.assign(destination), 700);
+      window.setTimeout(() => navigate(destination, { replace: true }), 700);
     } catch (error) {
       setServerError(error instanceof Error ? error.message : 'Unable to sign in.');
       setIsSubmitting(false);
@@ -98,16 +98,6 @@ export function SignInPage() {
           error={errors.password}
           disabled={isSubmitting}
         />
-
-        <label className="checkbox-field">
-          <input
-            type="checkbox"
-            checked={rememberMe}
-            onChange={(event) => setRememberMe(event.target.checked)}
-            disabled={isSubmitting}
-          />
-          <span>Keep me signed in on this device</span>
-        </label>
 
         <button className="auth-submit" type="submit" disabled={isSubmitting}>
           {isSubmitting ? <span className="button-spinner" aria-hidden="true" /> : 'Sign in'}

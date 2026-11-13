@@ -1,4 +1,5 @@
 import axios, { type InternalAxiosRequestConfig } from 'axios';
+import { navigate } from '../routing/router';
 
 interface ApiErrorResponse {
   message?: string;
@@ -85,7 +86,7 @@ apiClient.interceptors.response.use(
         }
 
         if (!['/signin', '/signup', '/login', '/register'].includes(window.location.pathname)) {
-          window.location.assign('/signin');
+          navigate('/signin', { replace: true });
         }
       }
     }

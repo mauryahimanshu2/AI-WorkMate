@@ -6,9 +6,13 @@ import { ContentDetailPage } from './content/pages/ContentDetailPage';
 import { ContentHistoryPage } from './content/pages/ContentHistoryPage';
 import { ContentStudioPage } from './content/pages/ContentStudioPage';
 import { AdminDashboardPage } from './admin/pages/AdminDashboardPage';
+import { useLocation, useSpaLinks } from './routing/router';
 
 function App() {
-  const path = window.location.pathname.replace(/\/$/, '') || '/';
+  const location = useLocation();
+  useSpaLinks();
+
+  const path = location.split(/[?#]/, 1)[0].replace(/\/$/, '') || '/';
 
   if (path === '/signin' || path === '/login') {
     return <SignInPage />;
